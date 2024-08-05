@@ -1,0 +1,18 @@
+.log {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; /* Высота видимой области окна браузера */
+    width: 100vw;  /* Ширина видимой области окна браузера */
+    background-color: #f0f2f5; /* Цвет фона страницы, можете изменить на свой */
+  }
+  
+  .log .ant-form {
+    background: #fff; /* Цвет фона формы, можете изменить на свой */
+    padding: 24px;
+    border-radius: 8px; /* Закругление углов формы, можете изменить на свой */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Тень формы */
+    width: 90%;
+    max-width: 400px; /* Фиксированная ширина формы */
+  }
+  

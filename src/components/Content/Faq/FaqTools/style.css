@@ -1,0 +1,21 @@
+.faqTools {
+    height: 64px;
+    margin: 0;
+    padding: 10px;
+}
+.searchAdd{
+    float: right;
+}
+.search{
+    height:50px;
+    width: 60%;
+    display: inline-block;
+}
+.add{
+    width:calc(100% - 20px);
+    margin-left:10px;
+    margin-right:10px;
+}
+.ant-modal {
+    z-index: 1050; /* Ensure this is higher than the z-index of other elements */
+  }

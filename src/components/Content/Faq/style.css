@@ -1,0 +1,21 @@
+.faq {
+    height: 500px; /* Fixed height for the .faq container */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .faqTable {
+    flex: 1; /* Allows the table to take the remaining space in .faq */
+  }
+  
+  .faqTable .ant-table-header {
+    position: sticky;
+    top: 0;
+    z-index: 1; /* Ensures the header is above the scrolling rows */
+  }
+  
+  .faqTable .ant-table-body {
+    max-height: calc(100vh - 240px); /* Adjust to account for header height */
+    overflow-y: auto; /* Enables vertical scrolling for rows */
+  }
+  
