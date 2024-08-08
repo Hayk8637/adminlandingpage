@@ -146,15 +146,15 @@ const Faq: React.FC = () => {
       setOriginalData(fetchedData);
     };
     loadData();
-  }, []); // Empty dependency array to ensure this runs only once
+  }, []); 
 
   const updateOrder = async (newData: DataType[]) => {
     try {
       const updates: Record<string, any> = {};
       newData.forEach((item) => {
         updates[`Faq/${item.key}`] = {
-          question: item.questionEN,  // Adjust based on the language or source
-          answer: item.answerEN,      // Adjust based on the language or source
+          question: item.questionEN, 
+          answer: item.answerEN,    
           order: item.order
         };
       });
@@ -198,7 +198,7 @@ const Faq: React.FC = () => {
             rowKey="key"
             components={{ body: { row: Row } }}
             pagination={false}
-            scroll={{ y: 'calc(100vh - 240px)' }} /* Matches CSS adjustment */
+            scroll={{ y: 'calc(100vh - 240px)' }} 
           />
         </SortableContext>
       </DndContext>

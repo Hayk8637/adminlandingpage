@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { auth } from '../firebase-config'; 
 
@@ -7,19 +7,26 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ element }) => {
-  const [user, setUser] = React.useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
 
-  React.useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setUser(user);
+      setLoading(false);
+    });
     return () => unsubscribe();
   }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return user ? (
     element
   ) : (
-    <Navigate to="/dashboard" state={{ from: location }} replace />
+    <Navigate to="/" state={{ from: location }} replace />
   );
 };
-
 export default PrivateRoute;
