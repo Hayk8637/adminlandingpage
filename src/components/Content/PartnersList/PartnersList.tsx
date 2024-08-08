@@ -15,23 +15,23 @@ import { Button, Table, Popconfirm } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { database, ref, set, remove } from '../../../firebase-config'; // Import Firebase
 import './style.css';
-import FaqTools from './FaqTools/FaqTools';
+import PartnersListTools from './PartnersListTools/PartnersListTools';
 
-// Define the interface for FAQ data
-interface FaqItem {
-  question?: string;
-  answer?: string;
+// Define the interface for Partner data
+interface Partner {
+  name: string;
+  imgUrl: string;
 }
 
 interface DataType {
   key: string;
   order: number;
-  questionEN: string;
-  answerEN: string;
-  questionRU: string;
-  answerRU: string;
-  questionAM: string;
-  answerAM: string;
+  nameEN: string;
+  imageEN: string;
+  nameRU: string;
+  imageRU: string;
+  nameAM: string;
+  imageAM: string;
 }
 
 interface RowContextProps {
@@ -55,18 +55,16 @@ const DragHandle: React.FC = () => {
   );
 };
 
-
-
-const fetchFaqData = async (): Promise<DataType[]> => {
+const fetchPartnersData = async (): Promise<DataType[]> => {
   try {
     const [enRes, amRes, ruRes] = await Promise.all([
-      fetch('https://menubyqr-default-rtdb.firebaseio.com/LANDING/en/Faq.json'),
-      fetch('https://menubyqr-default-rtdb.firebaseio.com/LANDING/am/Faq.json'),
-      fetch('https://menubyqr-default-rtdb.firebaseio.com/LANDING/ru/Faq.json'),
+      fetch('https://menubyqr-default-rtdb.firebaseio.com/LANDING/en/partnersList.json'),
+      fetch('https://menubyqr-default-rtdb.firebaseio.com/LANDING/am/partnersList.json'),
+      fetch('https://menubyqr-default-rtdb.firebaseio.com/LANDING/ru/partnersList.json'),
     ]);
 
     if (!enRes.ok || !amRes.ok || !ruRes.ok) {
-      throw new Error('Failed to fetch FAQ data');
+      throw new Error('Failed to fetch partners data');
     }
 
     const [enData, amData, ruData] = await Promise.all([
@@ -75,24 +73,28 @@ const fetchFaqData = async (): Promise<DataType[]> => {
       ruRes.json(),
     ]);
 
-    const enDataArray = Object.entries(enData || {}) as [string, FaqItem][];
-    const amDataArray = Object.entries(amData || {}) as [string, FaqItem][];
-    const ruDataArray = Object.entries(ruData || {}) as [string, FaqItem][];
+    const enDataArray = Object.entries(enData || {}) as [string, Partner][];
+    const amDataArray = Object.entries(amData || {}) as [string, Partner][];
+    const ruDataArray = Object.entries(ruData || {}) as [string, Partner][];
 
-    return enDataArray.map(([id, item]: [string, FaqItem], index: number) => ({
+    return enDataArray.map(([id, item], index) => ({
       key: id,
       order: index + 1,
-      questionEN: item.question || '',
-      answerEN: item.answer || '',
-      questionRU: ruDataArray.find(i => i[0] === id)?.[1].question || '',
-      answerRU: ruDataArray.find(i => i[0] === id)?.[1].answer || '',
-      questionAM: amDataArray.find(i => i[0] === id)?.[1].question || '',
-      answerAM: amDataArray.find(i => i[0] === id)?.[1].answer || '',
+      nameEN: item.name || '',
+      imageEN: item.imgUrl || '',
+      nameRU: ruDataArray.find(i => i[0] === id)?.[1].name || '',
+      imageRU: ruDataArray.find(i => i[0] === id)?.[1].imgUrl || '',
+      nameAM: amDataArray.find(i => i[0] === id)?.[1].name || '',
+      imageAM: amDataArray.find(i => i[0] === id)?.[1].imgUrl || '',
     }));
   } catch (error) {
-    console.error('Error fetching FAQ data:', error);
+    console.error('Error fetching partners data:', error);
     return [];
   }
+};
+
+const sanitizeKey = (key: string): string => {
+  return key.replace(/[/.[#$\][]/g, '_');
 };
 
 const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableRowElement>> = (props) => {
@@ -125,13 +127,13 @@ const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableR
   );
 };
 
-const Faq: React.FC = () => {
+const PartnersList: React.FC = () => {
   const [data, setData] = useState<DataType[]>([]);
   const [, setOriginalData] = useState<DataType[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
-      const fetchedData = await fetchFaqData();
+      const fetchedData = await fetchPartnersData();
       setData(fetchedData);
       setOriginalData(fetchedData);
     };
@@ -142,24 +144,45 @@ const Faq: React.FC = () => {
     try {
       const updates: Record<string, any> = {};
       newData.forEach((item) => {
-        updates[`/LANDING/en/Faq/${item.key}`] = {
-          question: item.questionEN,
-          answer: item.answerEN,
+        const sanitizedKey = sanitizeKey(item.key);
+        updates[`/LANDING/en/partnersList/${sanitizedKey}`] = {
+          name: item.nameEN,
+          imgUrl: item.imageEN,
+          order: item.order,
+        };
+        updates[`/LANDING/am/partnersList/${sanitizedKey}`] = {
+          name: item.nameAM,
+          imgUrl: item.imageAM,
+          order: item.order,
+        };
+        updates[`/LANDING/ru/partnersList/${sanitizedKey}`] = {
+          name: item.nameRU,
+          imgUrl: item.imageRU,
           order: item.order,
         };
       });
 
-      await set(ref(database), updates);
-      console.log('FAQ data updated successfully.');
+      await Promise.all([
+        set(ref(database, '/LANDING/en/partnersList'), updates['/LANDING/en/partnersList']),
+        set(ref(database, '/LANDING/am/partnersList'), updates['/LANDING/am/partnersList']),
+        set(ref(database, '/LANDING/ru/partnersList'), updates['/LANDING/ru/partnersList']),
+      ]);
+
+      console.log('Partners data updated successfully.');
     } catch (error) {
-      console.error('Error updating FAQ data:', error);
+      console.error('Error updating partners data:', error);
     }
   };
 
   const handleDelete = async (key: string) => {
     try {
-      await remove(ref(database, `/LANDING/en/Faq/${key}`));
-      const updatedData: DataType[] = data.filter(item => item.key !== key);
+      const sanitizedKey = sanitizeKey(key);
+      await Promise.all([
+        remove(ref(database, `/LANDING/en/partnersList/${sanitizedKey}`)),
+        remove(ref(database, `/LANDING/am/partnersList/${sanitizedKey}`)),
+        remove(ref(database, `/LANDING/ru/partnersList/${sanitizedKey}`)),
+      ]);
+      const updatedData = data.filter(item => item.key !== key);
       setData(updatedData);
       await updateOrder(updatedData);
     } catch (error) {
@@ -167,7 +190,6 @@ const Faq: React.FC = () => {
     }
   };
 
-  
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -175,29 +197,33 @@ const Faq: React.FC = () => {
       const oldIndex = data.findIndex(item => item.key === active.id);
       const newIndex = data.findIndex(item => item.key === over?.id);
 
-      const updatedData: DataType[] = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
-        ...item,
-        order: index + 1,
-      }));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const updatedData = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
+          ...item,
+          order: index + 1,
+        }));
 
-      setData(updatedData);
-      await updateOrder(updatedData);
+        setData(updatedData);
+        await updateOrder(updatedData);
+      }
     }
   };
+
   const columns: TableColumnsType<DataType> = [
     { key: 'sort', align: 'center', width: 80, fixed:'left' , render: () => <DragHandle /> },
     { title: 'Order', dataIndex: 'order', key: 'order', width: 100 },
-    { title: 'Question EN', dataIndex: 'questionEN', key: 'questionEN', width: 400 },
-    { title: 'Answer EN', dataIndex: 'answerEN', key: 'answerEN', width: 400 },
-    { title: 'Question RU', dataIndex: 'questionRU', key: 'questionRU', width: 400 },
-    { title: 'Answer RU', dataIndex: 'answerRU', key: 'answerRU', width: 400 },
-    { title: 'Question AM', dataIndex: 'questionAM', key: 'questionAM', width: 400 },
-    { title: 'Answer AM', dataIndex: 'answerAM', key: 'answerAM', width: 400 },
+    { title: 'Name (EN)', dataIndex: 'nameEN', key: 'nameEN', width: 200 },
+    { title: 'Image (EN)', dataIndex: 'imageEN', key: 'imageEN', width: 200 },
+    { title: 'Name (RU)', dataIndex: 'nameRU', key: 'nameRU', width: 200 },
+    { title: 'Image (RU)', dataIndex: 'imageRU', key: 'imageRU', width: 200 },
+    { title: 'Name (AM)', dataIndex: 'nameAM', key: 'nameAM', width: 200 },
+    { title: 'Image (AM)', dataIndex: 'imageAM', key: 'imageAM', width: 200 },
     {
       key: 'action',
-      fixed: 'right',
-      width: '80px',
       title: 'Action',
+      align: 'center',
+      fixed: 'right',
+      width: 80,
       render: (_, record) => (
         <Popconfirm
           title="Are you sure you want to delete this item?"
@@ -210,19 +236,20 @@ const Faq: React.FC = () => {
       ),
     },
   ];
+
   return (
-    <div className='faq'>
-      <FaqTools />
+    <div className='partnersList'>
+      <PartnersListTools />
       <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
         <SortableContext items={data.map(item => item.key)} strategy={verticalListSortingStrategy}>
           <Table
-            className='faqTable'
+            className='partnersListTable'
             columns={columns}
             dataSource={data}
             rowKey="key"
             components={{ body: { row: Row } }}
             pagination={false}
-            scroll={{ y: 'calc(100vh - 240px)' }} /* Matches CSS adjustment */
+            scroll={{ y: 600 }}
           />
         </SortableContext>
       </DndContext>
@@ -230,4 +257,4 @@ const Faq: React.FC = () => {
   );
 };
 
-export default Faq;
+export default PartnersList;

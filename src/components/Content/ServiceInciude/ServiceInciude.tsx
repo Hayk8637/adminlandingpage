@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect, useState } from 'react';
-import { HolderOutlined } from '@ant-design/icons';
+import { HolderOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
@@ -11,10 +11,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table } from 'antd';
+import { Button, Table, Popconfirm } from 'antd';
 import type { TableColumnsType } from 'antd';
 import ServiceIncludeTools from './ServiceIncludeTools/ServiceIncludeTools';
-import { database, ref, set } from '../../../firebase-config'; // Import Firebase
+import { database, ref, set, remove } from '../../../firebase-config'; // Import Firebase
 import './style.css';
 
 // Define the interface for ServiceInclude data
@@ -51,13 +51,6 @@ const DragHandle: React.FC = () => {
   );
 };
 
-const columns: TableColumnsType<DataType> = [
-  { key: 'sort', align: 'center', width: 80, render: () => <DragHandle /> },
-  { title: 'Order', dataIndex: 'order', key: 'order', width: 100 },
-  { title: 'Service EN', dataIndex: 'serviceEN', key: 'serviceEN', width: 400 },
-  { title: 'Service RU', dataIndex: 'serviceRU', key: 'serviceRU', width: 400 },
-  { title: 'Service AM', dataIndex: 'serviceAM', key: 'serviceAM', width: 400 },
-];
 
 const fetchServiceIncludeData = async () => {
   try {
@@ -77,24 +70,22 @@ const fetchServiceIncludeData = async () => {
       ruRes.json(),
     ]);
 
-    // Convert objects to arrays
-    const enDataArray = Object.values(enData || {}) as ServiceIncludeItem[];
-    const amDataArray = Object.values(amData || {}) as ServiceIncludeItem[];
-    const ruDataArray = Object.values(ruData || {}) as ServiceIncludeItem[];
+    const enDataArray = Object.entries(enData || {}) as [string, ServiceIncludeItem][];
+    const amDataArray = Object.entries(amData || {}) as [string, ServiceIncludeItem][];
+    const ruDataArray = Object.entries(ruData || {}) as [string, ServiceIncludeItem][];
 
-    return enDataArray.map((item: ServiceIncludeItem, index: number) => ({
-      key: index.toString(),
+    return enDataArray.map(([id, item], index) => ({
+      key: id,
       order: index + 1,
       serviceEN: item.include || '',
-      serviceRU: ruDataArray[index]?.include || '',
-      serviceAM: amDataArray[index]?.include || '',
+      serviceRU: ruDataArray.find(i => i[0] === id)?.[1].include || '',
+      serviceAM: amDataArray.find(i => i[0] === id)?.[1].include || '',
     }));
   } catch (error) {
     console.error('Error fetching Service Include data:', error);
     return [];
   }
 };
-
 const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableRowElement>> = (props) => {
   const {
     attributes,
@@ -142,7 +133,7 @@ const ServiceInclude: React.FC = () => {
     try {
       const updates: Record<string, any> = {};
       newData.forEach((item) => {
-        updates[`ServiceInclude/${item.key}`] = {
+        updates[`/LANDING/en/ServiceInclude/${item.key}`] = {
           service: item.serviceEN,
           order: item.order
         };
@@ -153,6 +144,17 @@ const ServiceInclude: React.FC = () => {
       console.log('Service Include data updated successfully.');
     } catch (error) {
       console.error('Error updating ServiceInclude data:', error);
+    }
+  };
+
+  const handleDelete = async (key: string) => {
+    try {
+      await remove(ref(database, `/LANDING/en/ServiceInclude/${key}`));
+      const updatedData = data.filter(item => item.key !== key);
+      setData(updatedData);
+      await updateOrder(updatedData);
+    } catch (error) {
+      console.error('Error deleting item:', error);
     }
   };
 
@@ -174,7 +176,31 @@ const ServiceInclude: React.FC = () => {
       }
     }
   };
-
+  
+  const columns: TableColumnsType<DataType> = [
+    { key: 'sort', align: 'center', width: 80, fixed:'left' , render: () => <DragHandle /> },
+    { title: 'Order', dataIndex: 'order', key: 'order', width: 100 },
+    { title: 'Service EN', dataIndex: 'serviceEN', key: 'serviceEN', width: 400 },
+    { title: 'Service RU', dataIndex: 'serviceRU', key: 'serviceRU', width: 400 },
+    { title: 'Service AM', dataIndex: 'serviceAM', key: 'serviceAM', width: 400 },
+    {
+      key: 'action',
+      title: 'Action',
+      align: 'center',
+      fixed: 'right',
+      width: 80,
+      render: (_, record) => (
+        <Popconfirm
+          title="Are you sure you want to delete this item?"
+          onConfirm={() => handleDelete(record.key)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="text" icon={<DeleteOutlined />} />
+        </Popconfirm>
+      ),
+    },
+  ];
   return (
     <div className='serviceInclude'>
       <ServiceIncludeTools />

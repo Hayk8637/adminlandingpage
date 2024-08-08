@@ -12,7 +12,7 @@ import {
 import { Button, Layout, Menu, theme } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase-config';
-
+import ContentC from '../../components/Content/Content'
 const { Header, Sider, Content } = Layout;
 
 const App: React.FC = () => {
@@ -46,7 +46,7 @@ const App: React.FC = () => {
         navigate('/dashboard/about-app');
         break;
       case '5':
-        navigate('/dashboard/partners');
+        navigate('/dashboard/partners-list');
         break;
       default:
         break;
@@ -141,7 +141,7 @@ const App: React.FC = () => {
             borderRadius: borderRadiusLG,
           }}
         >
-          {/* Your content goes here */}
+            <ContentC />
         </Content>
       </Layout>
     </Layout>
