@@ -7,13 +7,12 @@ import {
   QuestionCircleOutlined,
   UnorderedListOutlined,
   ApartmentOutlined,
-  MailOutlined,
   DatabaseOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
-import ContentC from '../../components/Content/Content';
 import { Button, Layout, Menu, theme } from 'antd';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { auth } from '../../firebase-config'; // Import auth from your Firebase config
+import { useNavigate } from 'react-router-dom';
+import { auth } from '../../firebase-config';
 
 const { Header, Sider, Content } = Layout;
 
@@ -27,9 +26,9 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      navigate('/'); // Navigate to the login page
+      navigate('/'); 
     } catch (error) {
-      console.error('Ошибка выхода из системы:', error);
+      console.error('Error signing out:', error);
     }
   };
 
@@ -60,6 +59,7 @@ const App: React.FC = () => {
         break;
     }
   };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider trigger={null} collapsible collapsed={collapsed}>
@@ -68,7 +68,8 @@ const App: React.FC = () => {
           theme="dark"
           mode="inline"
           defaultSelectedKeys={['1']}
-          onClick={handleMenuClick} // Add onClick handler
+          defaultOpenKeys={['sub1']}
+          onClick={handleMenuClick}
           items={[
             {
               key: '1',
@@ -76,34 +77,41 @@ const App: React.FC = () => {
               label: 'User',
             },
             {
-              key: '2',
+              key: 'sub1',
               icon: <QuestionCircleOutlined />,
-              label: 'FAQ',
-            },
-            {
-              key: '3',
-              icon: <UnorderedListOutlined />,
-              label: 'Service Include',
-            },
-            {
-              key: '4',
-              icon: <UnorderedListOutlined />,
-              label: 'About App',
-            },
-            {
-              key: '5',
-              icon: <ApartmentOutlined />,
-              label: 'Partner List',
+              label: 'Landing Page',
+              children: [
+                {
+                  key: '4',
+                  icon: <UnorderedListOutlined />,
+                  label: 'About App',
+                },
+                {
+                  key: '5',
+                  icon: <ApartmentOutlined />,
+                  label: 'Partner List',
+                },
+                {
+                  key: '3',
+                  icon: <UnorderedListOutlined />,
+                  label: 'Service Include',
+                },
+                {
+                  key: '2',
+                  icon: <QuestionCircleOutlined />,
+                  label: 'FAQ',
+                },
+                {
+                  key: '7',
+                  icon: <DatabaseOutlined />,
+                  label: 'Page Language',
+                },
+              ],
             },
             {
               key: '6',
               icon: <MailOutlined />,
               label: 'Became a Partner',
-            },
-            {
-              key: '7',
-              icon: <DatabaseOutlined />,
-              label: 'Page Language',
             },
           ]}
         />
@@ -130,7 +138,7 @@ const App: React.FC = () => {
           />
           <Button
             type="text"
-            icon={<LogoutOutlined />} // Logout icon
+            icon={<LogoutOutlined />}
             onClick={handleLogout}
             style={{
               fontSize: '16px',
@@ -142,7 +150,7 @@ const App: React.FC = () => {
         <Content
           style={{
             margin: '24px 16px',
-            padding: 8 ,
+            padding: 8,
             paddingTop: 0,
             minHeight: 280,
             height: 'calc(100vh - 112px)',
@@ -150,7 +158,7 @@ const App: React.FC = () => {
             borderRadius: borderRadiusLG,
           }}
         >
-          <ContentC />
+          {/* Your content goes here */}
         </Content>
       </Layout>
     </Layout>

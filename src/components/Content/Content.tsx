@@ -5,6 +5,7 @@ import Faq from './Faq/Faq';
 import AboutApp from './AboutApp/AboutApp';
 import ServiceInciude from './ServiceInciude/ServiceInciude';
 import Partners from './Partners/Partners';
+import PageLanguage from './PageLanguage/PageLanguage';
 
 const Content: React.FC = () => {
   const path = useLocation().pathname.split('/').pop(); // Get the last segment of the path
@@ -15,6 +16,7 @@ const Content: React.FC = () => {
       {path === 'about-app' ? <AboutApp /> : null}
       {path === 'service-include' ? <ServiceInciude /> : null}
       {path === 'partners' ? <Partners /> : null}
+      {path === 'page-language' ? <PageLanguage /> : null}
     </div>
   );
 };
