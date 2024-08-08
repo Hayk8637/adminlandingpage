@@ -7,8 +7,7 @@ import {
   QuestionCircleOutlined,
   UnorderedListOutlined,
   ApartmentOutlined,
-  DatabaseOutlined,
-  MailOutlined,
+  PicRightOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -49,12 +48,6 @@ const App: React.FC = () => {
       case '5':
         navigate('/dashboard/partners');
         break;
-      case '6':
-        navigate('/dashboard/became-a-partner');
-        break;
-      case '7':
-        navigate('/dashboard/page-language');
-        break;
       default:
         break;
     }
@@ -78,7 +71,7 @@ const App: React.FC = () => {
             },
             {
               key: 'sub1',
-              icon: <QuestionCircleOutlined />,
+              icon: <PicRightOutlined />,
               label: 'Landing Page',
               children: [
                 {
@@ -101,17 +94,7 @@ const App: React.FC = () => {
                   icon: <QuestionCircleOutlined />,
                   label: 'FAQ',
                 },
-                {
-                  key: '7',
-                  icon: <DatabaseOutlined />,
-                  label: 'Page Language',
-                },
               ],
-            },
-            {
-              key: '6',
-              icon: <MailOutlined />,
-              label: 'Became a Partner',
             },
           ]}
         />
