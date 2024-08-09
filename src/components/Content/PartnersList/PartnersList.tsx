@@ -176,11 +176,10 @@ const PartnersList: React.FC = () => {
 
   const handleDelete = async (key: string) => {
     try {
-      const sanitizedKey = sanitizeKey(key);
       await Promise.all([
-        remove(ref(database, `/LANDING/en/partnersList/${sanitizedKey}`)),
-        remove(ref(database, `/LANDING/am/partnersList/${sanitizedKey}`)),
-        remove(ref(database, `/LANDING/ru/partnersList/${sanitizedKey}`)),
+        remove(ref(database, `/LANDING/en/partnersList/${key}`)),
+        remove(ref(database, `/LANDING/am/partnersList/${key}`)),
+        remove(ref(database, `/LANDING/ru/partnersList/${key}`)),
       ]);
       const updatedData = data.filter(item => item.key !== key);
       setData(updatedData);

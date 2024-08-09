@@ -158,7 +158,11 @@ const Faq: React.FC = () => {
 
   const handleDelete = async (key: string) => {
     try {
-      await remove(ref(database, `/LANDING/en/Faq/${key}`));
+      await Promise.all([
+        remove(ref(database, `/LANDING/en/Faq/${key}`)),
+        remove(ref(database, `/LANDING/am/Faq/${key}`)),
+        remove(ref(database, `/LANDING/ru/Faq/${key}`)),
+      ]);
       const updatedData: DataType[] = data.filter(item => item.key !== key);
       setData(updatedData);
       await updateOrder(updatedData);

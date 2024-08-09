@@ -140,6 +140,7 @@ const ServiceInclude: React.FC = () => {
       });
 
       const dbRef = ref(database, '/LANDING/en/ServiceInclude');
+      
       await set(dbRef, updates);
       console.log('Service Include data updated successfully.');
     } catch (error) {
@@ -149,7 +150,11 @@ const ServiceInclude: React.FC = () => {
 
   const handleDelete = async (key: string) => {
     try {
-      await remove(ref(database, `/LANDING/en/ServiceInclude/${key}`));
+      await Promise.all([
+        remove(ref(database, `/LANDING/en/ServiceInclude/${key}`)),
+        remove(ref(database, `/LANDING/am/ServiceInclude/${key}`)),
+        remove(ref(database, `/LANDING/ru/ServiceInclude/${key}`)),
+      ]);
       const updatedData = data.filter(item => item.key !== key);
       setData(updatedData);
       await updateOrder(updatedData);

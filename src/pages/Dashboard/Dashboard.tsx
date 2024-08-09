@@ -48,6 +48,9 @@ const App: React.FC = () => {
       case '5':
         navigate('/dashboard/partners-list');
         break;
+      case '6':
+        navigate('/dashboard/social-pages');
+        break;
       default:
         break;
     }
@@ -93,6 +96,11 @@ const App: React.FC = () => {
                   key: '2',
                   icon: <QuestionCircleOutlined />,
                   label: 'FAQ',
+                },
+                {
+                  key: '6',
+                  icon: <QuestionCircleOutlined />,
+                  label: 'Social pages',
                 },
               ],
             },

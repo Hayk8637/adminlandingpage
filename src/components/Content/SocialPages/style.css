@@ -1,0 +1,8 @@
+.socialPages {
+    max-height: calc(100vh - 240px); 
+    overflow-y: auto;
+}
+.socialPages > .left , .right {
+    display: inline-block;
+    width: 350px;
+}
