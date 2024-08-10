@@ -51,6 +51,9 @@ const App: React.FC = () => {
       case '6':
         navigate('/dashboard/social-pages');
         break;
+      case '7':
+        navigate('/dashboard/languages');
+        break;  
       default:
         break;
     }
@@ -77,6 +80,11 @@ const App: React.FC = () => {
               icon: <PicRightOutlined />,
               label: 'Landing Page',
               children: [
+                {
+                  key: '7',
+                  icon: <UnorderedListOutlined />,
+                  label: 'Languages',
+                },
                 {
                   key: '4',
                   icon: <UnorderedListOutlined />,

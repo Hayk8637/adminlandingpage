@@ -13,14 +13,12 @@ const SocialSection: React.FC<SocialSectionProps> = ({ title }) => {
   const [socialLink, setSocialLink] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
-  // Fetch data from Firebase on component mount
   useEffect(() => {
     const fetchData = async () => {
       const linkRef = ref(database, `LANDING/socialPages`);
       const snapshot = await get(linkRef);
       if (snapshot.exists()) {
         const data = snapshot.val();
-        console.log('Fetched data:', data); // Debug: Log fetched data
         setSocialLink(data[title.toLowerCase()] || null);
       } else {
         console.log('No data available');
@@ -50,7 +48,7 @@ const SocialSection: React.FC<SocialSectionProps> = ({ title }) => {
   const editLink = () => {
     setEditingKey(title.toLowerCase());
     form.setFieldsValue({ url: socialLink });
-    console.log('Editing link:', socialLink); // Debug: Log the link being edited
+    console.log('Editing link:', socialLink); 
   };
 
   const deleteLink = async () => {

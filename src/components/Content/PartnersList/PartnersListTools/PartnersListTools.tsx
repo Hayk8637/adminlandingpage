@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import './style.css';
 
-
 const PartnersListTools: React.FC = () => {
   const path = useLocation().pathname;
   const location = path.split('/');
@@ -58,6 +57,7 @@ const PartnersListTools: React.FC = () => {
           onCancel={() => setIsModalVisible(false)}
           width={900}
           style={{ maxWidth: '90%' }}
+          zIndex={10000000}  
         >
           <Form
             form={form}
@@ -89,7 +89,7 @@ const PartnersListTools: React.FC = () => {
                 </Form.Item>
               </Col>
               <Col span={12}>
-              <Form.Item
+                <Form.Item
                   name="partnerImgUrlEn"
                   label="Image URL (EN)"
                   rules={[{ required: true, message: 'Please input the image URL for English!' }]}

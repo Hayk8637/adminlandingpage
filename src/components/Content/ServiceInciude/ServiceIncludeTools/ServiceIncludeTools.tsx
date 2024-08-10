@@ -46,14 +46,13 @@ const ServiceIncludeTools: React.FC = () => {
         <div className='searchAdd'>
           <Button type='primary' className='add' onClick={() => setIsModalVisible(true)}>Add {pageName}</Button>
         </div>
-        {/* Modal */}
         <Modal
           title={`Add ${pageName}`}
           open={isModalVisible}
           onOk={() => form.submit()}
           onCancel={() => setIsModalVisible(false)}
           width={'500px'}
-          
+          zIndex={10000000}  
           style={{ maxWidth: '90%', margin: 'a' }}
         >
           <Form

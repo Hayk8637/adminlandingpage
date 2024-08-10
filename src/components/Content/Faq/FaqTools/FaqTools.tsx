@@ -55,6 +55,7 @@ const FaqTools: React.FC = () => {
           onCancel={() => setIsModalVisible(false)}
           width={900}
           style={{ maxWidth: '90%' }}
+          zIndex={10000000}  
         >
           <Form
             form={form}
