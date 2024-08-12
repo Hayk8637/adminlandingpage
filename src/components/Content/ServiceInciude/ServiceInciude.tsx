@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect, useState } from 'react';
-import { HolderOutlined, DeleteOutlined } from '@ant-design/icons';
+import { HolderOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
@@ -11,13 +11,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table, Popconfirm } from 'antd';
+import { Button, Table, Popconfirm, Modal, Input, Form } from 'antd';
 import type { TableColumnsType } from 'antd';
-import ServiceIncludeTools from './ServiceIncludeTools/ServiceIncludeTools';
-import { database, ref, set, remove } from '../../../firebase-config'; // Import Firebase
+import { database, ref, set, remove } from '../../../firebase-config';
 import './style.css';
+import ServiceIncludeTools from './ServiceIncludeTools/ServiceIncludeTools';
 
-// Define the interface for ServiceInclude data
 interface ServiceIncludeItem {
   include?: string;
 }
@@ -50,7 +49,6 @@ const DragHandle: React.FC = () => {
     />
   );
 };
-
 
 const fetchServiceIncludeData = async () => {
   try {
@@ -86,6 +84,7 @@ const fetchServiceIncludeData = async () => {
     return [];
   }
 };
+
 const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableRowElement>> = (props) => {
   const {
     attributes,
@@ -118,7 +117,10 @@ const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableR
 
 const ServiceInclude: React.FC = () => {
   const [data, setData] = useState<DataType[]>([]);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [, setCurrentItem] = useState<DataType | null>(null);
   const [, setOriginalData] = useState<DataType[]>([]);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     const loadData = async () => {
@@ -134,14 +136,20 @@ const ServiceInclude: React.FC = () => {
       const updates: Record<string, any> = {};
       newData.forEach((item) => {
         updates[`/LANDING/en/ServiceInclude/${item.key}`] = {
-          service: item.serviceEN,
-          order: item.order
+          include: item.serviceEN,
+          order: item.order,
+        };
+        updates[`/LANDING/am/ServiceInclude/${item.key}`] = {
+          include: item.serviceAM,
+          order: item.order,
+        };
+        updates[`/LANDING/ru/ServiceInclude/${item.key}`] = {
+          include: item.serviceRU,
+          order: item.order,
         };
       });
 
-      const dbRef = ref(database, '/LANDING/en/ServiceInclude');
-      
-      await set(dbRef, updates);
+      await set(ref(database, '/LANDING'), updates);
       console.log('Service Include data updated successfully.');
     } catch (error) {
       console.error('Error updating ServiceInclude data:', error);
@@ -163,6 +171,42 @@ const ServiceInclude: React.FC = () => {
     }
   };
 
+  const handleEdit = (item: DataType) => {
+    setCurrentItem(item);
+    form.setFieldsValue({
+      ...item,
+      serviceEN: item.serviceEN || '',
+      serviceRU: item.serviceRU || '',
+      serviceAM: item.serviceAM || '',
+    }); 
+    setEditModalVisible(true);
+  };
+
+  const handleSave = async (values: DataType) => {
+    try {
+      await set(ref(database, `/LANDING/en/ServiceInclude/${values.key}`), {
+        include: values.serviceEN,
+        order: values.order,
+      });
+      await set(ref(database, `/LANDING/am/ServiceInclude/${values.key}`), {
+        include: values.serviceAM,
+        order: values.order,
+      });
+      await set(ref(database, `/LANDING/ru/ServiceInclude/${values.key}`), {
+        include: values.serviceRU,
+        order: values.order,
+      });
+      
+      const updatedDataList = data.map(item =>
+        item.key === values.key ? values : item
+      );
+      setData(updatedDataList);
+      setEditModalVisible(false);
+    } catch (error) {
+      console.error('Error updating item:', error);
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -170,20 +214,18 @@ const ServiceInclude: React.FC = () => {
       const oldIndex = data.findIndex(item => item.key === active.id);
       const newIndex = data.findIndex(item => item.key === over?.id);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const updatedData = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
-          ...item,
-          order: index + 1,
-        }));
+      const updatedData = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
+        ...item,
+        order: index + 1,
+      }));
 
-        setData(updatedData);
-        await updateOrder(updatedData);
-      }
+      setData(updatedData);
+      await updateOrder(updatedData);
     }
   };
-  
+
   const columns: TableColumnsType<DataType> = [
-    { key: 'sort', align: 'center', width: 80, fixed:'left' , render: () => <DragHandle /> },
+    { key: 'sort', align: 'center', width: 80, fixed: 'left', render: () => <DragHandle /> },
     { title: 'Order', dataIndex: 'order', key: 'order', width: 100 },
     { title: 'Service EN', dataIndex: 'serviceEN', key: 'serviceEN', width: 400 },
     { title: 'Service RU', dataIndex: 'serviceRU', key: 'serviceRU', width: 400 },
@@ -193,36 +235,71 @@ const ServiceInclude: React.FC = () => {
       title: 'Action',
       align: 'center',
       fixed: 'right',
-      width: 80,
+      width: 120,
       render: (_, record) => (
-        <Popconfirm
-          title="Are you sure you want to delete this item?"
-          onConfirm={() => handleDelete(record.key)}
-          okText="Yes"
-          cancelText="No"
-        >
-          <Button type="text" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <>
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Popconfirm
+            title="Are you sure to delete this item?"
+            onConfirm={() => handleDelete(record.key)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button style={{ marginLeft: 10 }} icon={<DeleteOutlined />} type="primary" danger />
+            </Popconfirm>
+        </>
       ),
     },
   ];
+
   return (
-    <div className='serviceInclude'>
+    <>
       <ServiceIncludeTools />
-      <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
+      <DndContext
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={data.map(item => item.key)} strategy={verticalListSortingStrategy}>
           <Table
-            className='serviceIncludeTable'
+            rowKey="key"
             columns={columns}
             dataSource={data}
-            rowKey="key"
-            components={{ body: { row: Row } }}
             pagination={false}
-            scroll={{ y: 'calc(100vh - 240px)' }}
+            components={{ body: { row: Row } }}
+            scroll={{ y: 'calc(100vh - 240px)' }} 
           />
         </SortableContext>
       </DndContext>
-    </div>
+
+      <Modal
+        title="Edit Service Include"
+        visible={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        onOk={() => form.submit()}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSave}
+        >
+          <Form.Item name="key" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item name="order" hidden label="Order" rules={[{ required: true, message: 'Please input order!' }]}>
+            <Input type="number" />
+          </Form.Item>
+          <Form.Item name="serviceEN" label="Service EN" rules={[{ required: true, message: 'Please input service in English!' }]}>
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item name="serviceRU" label="Service RU" rules={[{ required: true, message: 'Please input service in Russian!' }]}>
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item name="serviceAM" label="Service AM" rules={[{ required: true, message: 'Please input service in Armenian!' }]}>
+            <Input.TextArea />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
   );
 };
 

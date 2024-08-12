@@ -22,25 +22,34 @@ const Languages: React.FC = () => {
       const enRef = ref(database, 'LANDING/en');
       const ruRef = ref(database, 'LANDING/ru');
       const amRef = ref(database, 'LANDING/am');
-
-      const [enSnapshot, ruSnapshot, amSnapshot] = await Promise.all([get(enRef), get(ruRef), get(amRef)]);
-      const enData = enSnapshot.val() || {};
-      const ruData = ruSnapshot.val() || {};
-      const amData = amSnapshot.val() || {};
-
-      const languagesArray: Language[] = Object.keys(enData).map(key => ({
-        key,
-        en: enData[key],
-        ru: ruData[key],
-        am: amData[key],
-      }));
-
-      setLanguages(languagesArray);
+  
+      try {
+        const [enSnapshot, ruSnapshot, amSnapshot] = await Promise.all([get(enRef), get(ruRef), get(amRef)]);
+        const enData = enSnapshot.val() || {};
+        const ruData = ruSnapshot.val() || {};
+        const amData = amSnapshot.val() || {};
+  
+        // Filter out entries where the value is an object or not a string
+        const languagesArray: Language[] = Object.keys(enData)
+          .filter(key => typeof enData[key] === 'string' && typeof ruData[key] === 'string' && typeof amData[key] === 'string')
+          .map(key => ({
+            key,
+            en: enData[key],
+            ru: ruData[key],
+            am: amData[key],
+          }));
+  
+        console.log('Fetched languages:', languagesArray); // Debugging line
+        setLanguages(languagesArray);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        message.error('Failed to fetch data.');
+      }
     };
-
+  
     fetchData();
   }, []);
-
+  
   const addOrUpdateLanguage = async (values: Language) => {
     const { key, en, ru, am } = values;
     const enRef = ref(database, `LANDING/en/${key}`);

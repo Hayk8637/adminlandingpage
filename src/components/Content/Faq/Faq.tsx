@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect, useState } from 'react';
-import { HolderOutlined, DeleteOutlined } from '@ant-design/icons';
+import { HolderOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
@@ -11,7 +11,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table, Popconfirm } from 'antd';
+import { Button, Table, Popconfirm, Modal, Input, Form } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { database, ref, set, remove } from '../../../firebase-config'; // Import Firebase
 import './style.css';
@@ -54,8 +54,6 @@ const DragHandle: React.FC = () => {
     />
   );
 };
-
-
 
 const fetchFaqData = async (): Promise<DataType[]> => {
   try {
@@ -127,7 +125,11 @@ const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableR
 
 const Faq: React.FC = () => {
   const [data, setData] = useState<DataType[]>([]);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [currentItem, setCurrentItem] = useState<DataType | null>(null);
   const [, setOriginalData] = useState<DataType[]>([]);
+
+  const [form] = Form.useForm();
 
   useEffect(() => {
     const loadData = async () => {
@@ -171,7 +173,53 @@ const Faq: React.FC = () => {
     }
   };
 
-  
+  const handleEdit = (item: DataType) => {
+    setCurrentItem(item);
+    form.setFieldsValue({
+      ...item,
+      questionEN: item.questionEN || '',
+      answerEN: item.answerEN || '',
+      questionRU: item.questionRU || '',
+      answerRU: item.answerRU || '',
+      questionAM: item.questionAM || '',
+      answerAM: item.answerAM || '',
+    }); // Set form fields to current item values
+    setEditModalVisible(true);
+  };
+
+  const handleSave = async (values: DataType) => {
+    if (values) {
+      try {
+        await set(ref(database, `/LANDING/en/Faq/${values.key}`), {
+          question: values.questionEN,
+          answer: values.answerEN,
+          order: values.order,
+        });
+
+        await set(ref(database, `/LANDING/am/Faq/${values.key}`), {
+          question: values.questionAM,
+          answer: values.answerAM,
+          order: values.order,
+        });
+
+        await set(ref(database, `/LANDING/ru/Faq/${values.key}`), {
+          question: values.questionRU,
+          answer: values.answerRU,
+          order: values.order,
+        });
+
+        const updatedDataList = data.map(item =>
+          item.key === values.key ? values : item
+        );
+        setData(updatedDataList);
+        setEditModalVisible(false);
+        console.log('Item updated successfully.');
+      } catch (error) {
+        console.error('Error updating item:', error);
+      }
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -188,9 +236,10 @@ const Faq: React.FC = () => {
       await updateOrder(updatedData);
     }
   };
+
   const columns: TableColumnsType<DataType> = [
-    { key: 'sort', align: 'center', width: 80, fixed:'left' , render: () => <DragHandle /> },
-    { title: 'Order', dataIndex: 'order', key: 'order', width: 100 },
+    { key: 'sort', align: 'center', width: 80, fixed: 'left', render: () => <DragHandle /> },
+    { title: 'Order', dataIndex: 'order', key: 'order', width: 80, align: 'center' }, // Added Order column
     { title: 'Question EN', dataIndex: 'questionEN', key: 'questionEN', width: 400 },
     { title: 'Answer EN', dataIndex: 'answerEN', key: 'answerEN', width: 400 },
     { title: 'Question RU', dataIndex: 'questionRU', key: 'questionRU', width: 400 },
@@ -200,20 +249,25 @@ const Faq: React.FC = () => {
     {
       key: 'action',
       fixed: 'right',
-      width: '80px',
+      width: '120px',
       title: 'Action',
       render: (_, record) => (
-        <Popconfirm
-          title="Are you sure you want to delete this item?"
-          onConfirm={() => handleDelete(record.key)}
-          okText="Yes"
-          cancelText="No"
-        >
-          <Button type="text" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <>
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Popconfirm
+            title="Are you sure you want to delete this item?"
+            onConfirm={() => handleDelete(record.key)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button style={{ marginLeft: 10 }} icon={<DeleteOutlined />} type="primary" danger />
+          </Popconfirm>
+        </>
       ),
     },
   ];
+  
+
   return (
     <div className='faq'>
       <FaqTools />
@@ -230,6 +284,73 @@ const Faq: React.FC = () => {
           />
         </SortableContext>
       </DndContext>
+
+      <Modal
+        title="Edit FAQ Item"
+        visible={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        onOk={() => {
+          form
+            .validateFields()
+            .then(values => {
+              if (currentItem) {
+                handleSave({ ...currentItem, ...values });
+              }
+            })
+            .catch(info => {
+              console.log('Validate Failed:', info);
+            });
+        }}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={currentItem || {}}
+        >
+          <Form.Item
+            name="questionEN"
+            label="Question EN"
+            rules={[{ required: true, message: 'Please input the question in English!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="answerEN"
+            label="Answer EN"
+            rules={[{ required: true, message: 'Please input the answer in English!' }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item
+            name="questionRU"
+            label="Question RU"
+            rules={[{ required: true, message: 'Please input the question in Russian!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="answerRU"
+            label="Answer RU"
+            rules={[{ required: true, message: 'Please input the answer in Russian!' }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item
+            name="questionAM"
+            label="Question AM"
+            rules={[{ required: true, message: 'Please input the question in Armenian!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="answerAM"
+            label="Answer AM"
+            rules={[{ required: true, message: 'Please input the answer in Armenian!' }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
