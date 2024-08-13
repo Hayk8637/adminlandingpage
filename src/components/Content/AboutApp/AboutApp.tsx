@@ -161,13 +161,11 @@ const AboutApp: React.FC = () => {
 
   const handleDelete = async (key: string) => {
     try {
-      // Remove the item from Firebase
       await Promise.all([
         remove(ref(database, `/LANDING/en/AboutApp/${key}`)),
         remove(ref(database, `/LANDING/am/AboutApp/${key}`)),
         remove(ref(database, `/LANDING/ru/AboutApp/${key}`)),
       ]);
-      // Remove the item from local state
       const updatedData = data.filter(item => item.key !== key);
       setData(updatedData);
       await updateOrder(updatedData);
