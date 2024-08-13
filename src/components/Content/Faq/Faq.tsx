@@ -11,19 +11,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table, Popconfirm, Modal, Input, Form } from 'antd';
+import { Button, Table, Popconfirm } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { database, ref, set, remove } from '../../../firebase-config'; // Import Firebase
+import { database, ref, set, remove } from '../../../firebase-config';
 import './style.css';
 import FaqTools from './FaqTools/FaqTools';
+import FaqEdit from './FaqEdit/FaqEdit'; 
 
-// Define the interface for FAQ data
-interface FaqItem {
+export interface FaqItem {
   question?: string;
   answer?: string;
 }
 
-interface DataType {
+export interface DataType {
   key: string;
   order: number;
   questionEN: string;
@@ -129,8 +129,6 @@ const Faq: React.FC = () => {
   const [currentItem, setCurrentItem] = useState<DataType | null>(null);
   const [, setOriginalData] = useState<DataType[]>([]);
 
-  const [form] = Form.useForm();
-
   useEffect(() => {
     const loadData = async () => {
       const fetchedData = await fetchFaqData();
@@ -139,7 +137,6 @@ const Faq: React.FC = () => {
     };
     loadData();
   }, []);
-
   const updateOrder = async (newData: DataType[]) => {
     try {
       const updates: Record<string, any> = {};
@@ -157,7 +154,6 @@ const Faq: React.FC = () => {
       console.error('Error updating FAQ data:', error);
     }
   };
-
   const handleDelete = async (key: string) => {
     try {
       await Promise.all([
@@ -172,21 +168,10 @@ const Faq: React.FC = () => {
       console.error('Error deleting item:', error);
     }
   };
-
   const handleEdit = (item: DataType) => {
     setCurrentItem(item);
-    form.setFieldsValue({
-      ...item,
-      questionEN: item.questionEN || '',
-      answerEN: item.answerEN || '',
-      questionRU: item.questionRU || '',
-      answerRU: item.answerRU || '',
-      questionAM: item.questionAM || '',
-      answerAM: item.answerAM || '',
-    }); // Set form fields to current item values
     setEditModalVisible(true);
   };
-
   const handleSave = async (values: DataType) => {
     if (values) {
       try {
@@ -208,38 +193,32 @@ const Faq: React.FC = () => {
           order: values.order,
         });
 
-        const updatedDataList = data.map(item =>
-          item.key === values.key ? values : item
-        );
-        setData(updatedDataList);
+        const updatedData = data.map((item) => (item.key === values.key ? values : item));
+        setData(updatedData);
         setEditModalVisible(false);
-        console.log('Item updated successfully.');
       } catch (error) {
-        console.error('Error updating item:', error);
+        console.error('Error saving FAQ data:', error);
       }
     }
   };
-
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (active.id !== over?.id) {
-      const oldIndex = data.findIndex(item => item.key === active.id);
-      const newIndex = data.findIndex(item => item.key === over?.id);
+      const activeIndex = data.findIndex(item => item.key === active.id);
+      const overIndex = data.findIndex(item => item.key === over?.id);
 
-      const updatedData: DataType[] = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
+      const newData = arrayMove(data, activeIndex, overIndex).map((item, index) => ({
         ...item,
         order: index + 1,
       }));
 
-      setData(updatedData);
-      await updateOrder(updatedData);
+      setData(newData);
+      await updateOrder(newData);
     }
   };
-
   const columns: TableColumnsType<DataType> = [
     { key: 'sort', align: 'center', width: 80, fixed: 'left', render: () => <DragHandle /> },
-    { title: 'Order', dataIndex: 'order', key: 'order', width: 80, align: 'center' }, // Added Order column
+    { title: 'Order', dataIndex: 'order', key: 'order', width: 80, align: 'center' },
     { title: 'Question EN', dataIndex: 'questionEN', key: 'questionEN', width: 400 },
     { title: 'Answer EN', dataIndex: 'answerEN', key: 'answerEN', width: 400 },
     { title: 'Question RU', dataIndex: 'questionRU', key: 'questionRU', width: 400 },
@@ -266,8 +245,6 @@ const Faq: React.FC = () => {
       ),
     },
   ];
-  
-
   return (
     <div className='faq'>
       <FaqTools />
@@ -284,73 +261,12 @@ const Faq: React.FC = () => {
           />
         </SortableContext>
       </DndContext>
-
-      <Modal
-        title="Edit FAQ Item"
+      <FaqEdit
         visible={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
-        onOk={() => {
-          form
-            .validateFields()
-            .then(values => {
-              if (currentItem) {
-                handleSave({ ...currentItem, ...values });
-              }
-            })
-            .catch(info => {
-              console.log('Validate Failed:', info);
-            });
-        }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={currentItem || {}}
-        >
-          <Form.Item
-            name="questionEN"
-            label="Question EN"
-            rules={[{ required: true, message: 'Please input the question in English!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="answerEN"
-            label="Answer EN"
-            rules={[{ required: true, message: 'Please input the answer in English!' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item
-            name="questionRU"
-            label="Question RU"
-            rules={[{ required: true, message: 'Please input the question in Russian!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="answerRU"
-            label="Answer RU"
-            rules={[{ required: true, message: 'Please input the answer in Russian!' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item
-            name="questionAM"
-            label="Question AM"
-            rules={[{ required: true, message: 'Please input the question in Armenian!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="answerAM"
-            label="Answer AM"
-            rules={[{ required: true, message: 'Please input the answer in Armenian!' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSave={handleSave}
+        currentItem={currentItem}
+      />
     </div>
   );
 };
