@@ -11,7 +11,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table, Popconfirm, Modal, Input, Form } from 'antd';
+import { Button, Table, Modal, Input, Form } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { database, ref, set, remove } from '../../../firebase-config';
 import './style.css';
@@ -118,15 +118,14 @@ const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableR
 const ServiceInclude: React.FC = () => {
   const [data, setData] = useState<DataType[]>([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [, setCurrentItem] = useState<DataType | null>(null);
-  const [, setOriginalData] = useState<DataType[]>([]);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [currentItem, setCurrentItem] = useState<DataType | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
     const loadData = async () => {
       const fetchedData = await fetchServiceIncludeData();
       setData(fetchedData);
-      setOriginalData(fetchedData);
     };
     loadData();
   }, []);
@@ -156,19 +155,27 @@ const ServiceInclude: React.FC = () => {
     }
   };
 
-  const handleDelete = async (key: string) => {
+  const handleDelete = async () => {
+    if (!currentItem) return;
     try {
       await Promise.all([
-        remove(ref(database, `/LANDING/en/ServiceInclude/${key}`)),
-        remove(ref(database, `/LANDING/am/ServiceInclude/${key}`)),
-        remove(ref(database, `/LANDING/ru/ServiceInclude/${key}`)),
+        remove(ref(database, `/LANDING/en/ServiceInclude/${currentItem.key}`)),
+        remove(ref(database, `/LANDING/am/ServiceInclude/${currentItem.key}`)),
+        remove(ref(database, `/LANDING/ru/ServiceInclude/${currentItem.key}`)),
       ]);
-      const updatedData = data.filter(item => item.key !== key);
+      const updatedData = data.filter(item => item.key !== currentItem.key);
       setData(updatedData);
       await updateOrder(updatedData);
+      setDeleteModalVisible(false);
+      setCurrentItem(null);
     } catch (error) {
       console.error('Error deleting item:', error);
     }
+  };
+
+  const handleDeleteClick = (item: DataType) => {
+    setCurrentItem(item);
+    setDeleteModalVisible(true);
   };
 
   const handleEdit = (item: DataType) => {
@@ -238,15 +245,18 @@ const ServiceInclude: React.FC = () => {
       width: 120,
       render: (_, record) => (
         <>
-          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-          <Popconfirm
-            title="Are you sure to delete this item?"
-            onConfirm={() => handleDelete(record.key)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button style={{ marginLeft: 10 }} icon={<DeleteOutlined />} type="primary" danger />
-            </Popconfirm>
+          <Button
+            onClick={() => handleEdit(record)}
+            icon={<EditOutlined />}
+            style={{ marginRight: '8px' }}
+            type='link'
+          />
+          <Button
+            danger
+            onClick={() => handleDeleteClick(record)}
+            icon={<DeleteOutlined />}
+            type='link'
+          />
         </>
       ),
     },
@@ -254,7 +264,7 @@ const ServiceInclude: React.FC = () => {
 
   return (
     <>
-      <ServiceIncludeTools />
+      <ServiceIncludeTools/>
       <DndContext
         modifiers={[restrictToVerticalAxis]}
         onDragEnd={handleDragEnd}
@@ -275,29 +285,35 @@ const ServiceInclude: React.FC = () => {
         title="Edit Service Include"
         visible={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
+        okButtonProps={{ type: 'primary' }}
+        cancelButtonProps={{ type: 'primary', danger: true }}        
         onOk={() => form.submit()}
+        okText="Save"
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
-        >
-          <Form.Item name="key" hidden>
+        <Form form={form} onFinish={handleSave} layout="vertical">
+          <Form.Item name="serviceEN" label="Service EN" rules={[{ required: true, message: 'Please enter service in English' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="order" hidden label="Order" rules={[{ required: true, message: 'Please input order!' }]}>
-            <Input type="number" />
+          <Form.Item name="serviceRU" label="Service RU" rules={[{ required: true, message: 'Please enter service in Russian' }]}>
+            <Input />
           </Form.Item>
-          <Form.Item name="serviceEN" label="Service EN" rules={[{ required: true, message: 'Please input service in English!' }]}>
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item name="serviceRU" label="Service RU" rules={[{ required: true, message: 'Please input service in Russian!' }]}>
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item name="serviceAM" label="Service AM" rules={[{ required: true, message: 'Please input service in Armenian!' }]}>
-            <Input.TextArea />
+          <Form.Item name="serviceAM" label="Service AM" rules={[{ required: true, message: 'Please enter service in Armenian' }]}>
+            <Input />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Confirm Deletion"
+        visible={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        onOk={handleDelete}
+        okButtonProps={{ type: 'primary', danger: true }}
+        cancelButtonProps={{ type: 'primary' }}
+        okText="Delete"
+        cancelText="Cancel"
+      >
+        <p>Are you sure you want to delete this item?</p>
       </Modal>
     </>
   );

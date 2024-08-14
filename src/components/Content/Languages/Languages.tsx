@@ -139,7 +139,7 @@ const Languages: React.FC = () => {
       render: (_: any, record: Language) => (
         <Space size="middle">
           <Button type="link" icon={<EditOutlined />} onClick={() => editLanguage(record)} />
-          <Button type="link" icon={<DeleteOutlined />} onClick={() => showDeleteModal(record.key)} />
+          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => showDeleteModal(record.key)} />
         </Space>
       ),
     },

@@ -53,6 +53,7 @@ const FaqTools: React.FC = () => {
           open={isModalVisible}
           onOk={() => form.submit()}
           onCancel={() => setIsModalVisible(false)}
+          cancelButtonProps={{type: 'primary' , danger: true}}
           width={900}
           style={{ maxWidth: '90%' }}
           zIndex={10000000}  

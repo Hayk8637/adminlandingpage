@@ -11,7 +11,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table, Popconfirm } from 'antd';
+import { Button, Table, Modal } from 'antd'; // Import Modal here
 import type { TableColumnsType } from 'antd';
 import { database, ref, set, remove } from '../../../firebase-config';
 import './style.css';
@@ -127,16 +127,16 @@ const Faq: React.FC = () => {
   const [data, setData] = useState<DataType[]>([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [currentItem, setCurrentItem] = useState<DataType | null>(null);
-  const [, setOriginalData] = useState<DataType[]>([]);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       const fetchedData = await fetchFaqData();
       setData(fetchedData);
-      setOriginalData(fetchedData);
     };
     loadData();
   }, []);
+
   const updateOrder = async (newData: DataType[]) => {
     try {
       const updates: Record<string, any> = {};
@@ -154,24 +154,36 @@ const Faq: React.FC = () => {
       console.error('Error updating FAQ data:', error);
     }
   };
-  const handleDelete = async (key: string) => {
-    try {
-      await Promise.all([
-        remove(ref(database, `/LANDING/en/Faq/${key}`)),
-        remove(ref(database, `/LANDING/am/Faq/${key}`)),
-        remove(ref(database, `/LANDING/ru/Faq/${key}`)),
-      ]);
-      const updatedData: DataType[] = data.filter(item => item.key !== key);
-      setData(updatedData);
-      await updateOrder(updatedData);
-    } catch (error) {
-      console.error('Error deleting item:', error);
+
+  const handleDeleteClick = (item: DataType) => {
+    setCurrentItem(item);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDelete = async () => {
+    if (currentItem) {
+      try {
+        await Promise.all([
+          remove(ref(database, `/LANDING/en/Faq/${currentItem.key}`)),
+          remove(ref(database, `/LANDING/am/Faq/${currentItem.key}`)),
+          remove(ref(database, `/LANDING/ru/Faq/${currentItem.key}`)),
+        ]);
+        const updatedData = data.filter(item => item.key !== currentItem.key);
+        setData(updatedData);
+        await updateOrder(updatedData);
+      } catch (error) {
+        console.error('Error deleting item:', error);
+      }
+      setDeleteModalVisible(false);
+      setCurrentItem(null);
     }
   };
+
   const handleEdit = (item: DataType) => {
     setCurrentItem(item);
     setEditModalVisible(true);
   };
+
   const handleSave = async (values: DataType) => {
     if (values) {
       try {
@@ -201,6 +213,7 @@ const Faq: React.FC = () => {
       }
     }
   };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
@@ -216,6 +229,7 @@ const Faq: React.FC = () => {
       await updateOrder(newData);
     }
   };
+
   const columns: TableColumnsType<DataType> = [
     { key: 'sort', align: 'center', width: 80, fixed: 'left', render: () => <DragHandle /> },
     { title: 'Order', dataIndex: 'order', key: 'order', width: 80, align: 'center' },
@@ -232,42 +246,62 @@ const Faq: React.FC = () => {
       title: 'Action',
       render: (_, record) => (
         <>
-          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-          <Popconfirm
-            title="Are you sure you want to delete this item?"
-            onConfirm={() => handleDelete(record.key)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button style={{ marginLeft: 10 }} icon={<DeleteOutlined />} type="primary" danger />
-          </Popconfirm>
+          <Button
+            icon={<EditOutlined />}
+            type="link"
+            onClick={() => handleEdit(record)}
+          />
+          <Button
+            icon={<DeleteOutlined />}
+            type="link"
+            danger
+            onClick={() => handleDeleteClick(record)}
+          />
         </>
       ),
     },
   ];
+
   return (
-    <div className='faq'>
-      <FaqTools />
+    <>
+    <div className="faq">
+      <FaqTools/>
       <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
         <SortableContext items={data.map(item => item.key)} strategy={verticalListSortingStrategy}>
           <Table
-            className='faqTable'
             columns={columns}
             dataSource={data}
-            rowKey="key"
-            components={{ body: { row: Row } }}
             pagination={false}
-            scroll={{ y: 'calc(100vh - 240px)' }} /* Matches CSS adjustment */
+            components={{ body: { row: Row } }}
+            rowKey="key"
+            scroll={{ y: 'calc(100vh - 240px)' }} 
           />
         </SortableContext>
       </DndContext>
-      <FaqEdit
-        visible={editModalVisible}
-        onCancel={() => setEditModalVisible(false)}
-        onSave={handleSave}
-        currentItem={currentItem}
-      />
+
     </div>
+      
+      <Modal
+        title="Delete Confirmation"
+        visible={deleteModalVisible}
+        onOk={handleDelete}
+        onCancel={() => setDeleteModalVisible(false)}
+        okText="Delete"
+        okButtonProps={{ type: 'primary', danger: true }}
+        cancelButtonProps={{type: 'primary'}}
+      >
+        <p>Are you sure you want to delete this item?</p>
+      </Modal>
+
+      {currentItem && (
+        <FaqEdit
+          visible={editModalVisible}
+          currentItem={currentItem}
+          onCancel={() => setEditModalVisible(false)}
+          onSave={handleSave}
+        />
+      )}
+    </>
   );
 };
 

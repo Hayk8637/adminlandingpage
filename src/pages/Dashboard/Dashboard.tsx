@@ -9,7 +9,7 @@ import {
   ApartmentOutlined,
   PicRightOutlined,
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme } from 'antd';
+import { Button, Layout, Menu, theme, Modal } from 'antd'; // Import Modal here
 import { useNavigate } from 'react-router-dom';
 import { getAuth, User } from 'firebase/auth'; // Import User type
 import ContentC from '../../components/Content/Content';
@@ -19,6 +19,7 @@ const { Header, Sider, Content } = Layout;
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null); // Define the type for user state
   const [collapsed, setCollapsed] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false); // State for modal visibility
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -33,12 +34,18 @@ const App: React.FC = () => {
     }
   }, [auth]);
 
+  const showLogoutModal = () => {
+    setLogoutModalVisible(true);
+  };
+
   const handleLogout = async () => {
     try {
       await auth.signOut();
       navigate('/'); 
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
+      setLogoutModalVisible(false);
     }
   };
 
@@ -149,7 +156,7 @@ const App: React.FC = () => {
           <Button
             type="text"
             icon={<LogoutOutlined />}
-            onClick={handleLogout}
+            onClick={showLogoutModal} // Show the modal on logout button click
             style={{
               fontSize: '16px',
               width: 64,
@@ -168,9 +175,21 @@ const App: React.FC = () => {
             borderRadius: borderRadiusLG,
           }}
         >
-            <ContentC />
+          <ContentC />
         </Content>
       </Layout>
+
+      <Modal
+        title="Confirm Logout"
+        visible={logoutModalVisible}
+        onOk={handleLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+        cancelButtonProps={{type: 'primary' }}
+        okText="Logout"
+        okButtonProps={{ type: 'primary', danger: true }} // Primary button style
+      >
+        <p>Are you sure you want to logout?</p>
+      </Modal>
     </Layout>
   );
 };

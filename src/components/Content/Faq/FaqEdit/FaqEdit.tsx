@@ -17,6 +17,8 @@ const FaqEdit: React.FC<FaqEditProps> = ({ visible, onCancel, onSave, currentIte
       title="Edit FAQ Item"
       visible={visible}
       onCancel={onCancel}
+      okButtonProps={{ type: 'primary' }}
+      cancelButtonProps={{ type: 'primary', danger: true }}
       onOk={() => {
         form
           .validateFields()

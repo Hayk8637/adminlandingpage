@@ -51,6 +51,7 @@ const AboutAppTools: React.FC = () => {
           open={isModalVisible}
           onOk={() => form.submit()}
           onCancel={() => setIsModalVisible(false)}
+          cancelButtonProps={{type: 'primary' , danger: true}}
           width={'500px'}
           zIndex={10000000}  
           style={{ maxWidth: '90%', margin: 'auto' }}

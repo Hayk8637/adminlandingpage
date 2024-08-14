@@ -97,7 +97,7 @@ const SocialSection: React.FC<SocialSectionProps> = ({ title }) => {
         return (
           <Space size="middle" style={{ float: 'right' }}>
             <Button type="link" icon={<EditOutlined />} onClick={editLink} />
-            <Button type="link" icon={<DeleteOutlined />} onClick={showDeleteModal} />
+            <Button type="link" danger icon={<DeleteOutlined />} onClick={showDeleteModal} />
           </Space>
         );
       },

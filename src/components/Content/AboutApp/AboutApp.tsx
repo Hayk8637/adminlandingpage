@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect, useState } from 'react';
-import { HolderOutlined, DeleteOutlined } from '@ant-design/icons';
+import { HolderOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
@@ -11,13 +11,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Table, Popconfirm } from 'antd';
+import { Button, Table, Modal, Input, Form } from 'antd';
 import type { TableColumnsType } from 'antd';
-import AboutAppTools from './AboutAppTools/AboutAppTools';
-import { database, ref, set, remove } from '../../../firebase-config'; // Import Firebase
+import { database, ref, set, remove } from '../../../firebase-config';
 import './style.css';
+import AboutAppTools from './AboutAppTools/AboutAppTools';
 
-// Define the interface for AboutApp data
 interface AboutAppItem {
   description?: string;
 }
@@ -50,7 +49,6 @@ const DragHandle: React.FC = () => {
     />
   );
 };
-
 
 const fetchAboutAppData = async (): Promise<DataType[]> => {
   try {
@@ -129,13 +127,15 @@ const Row: React.FC<{ 'data-row-key': string } & React.HTMLAttributes<HTMLTableR
 
 const AboutApp: React.FC = () => {
   const [data, setData] = useState<DataType[]>([]);
-  const [, setOriginalData] = useState<DataType[]>([]);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [currentItem, setCurrentItem] = useState<DataType | null>(null);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     const loadData = async () => {
       const fetchedData = await fetchAboutAppData();
       setData(fetchedData);
-      setOriginalData(fetchedData);
     };
 
     loadData();
@@ -159,18 +159,57 @@ const AboutApp: React.FC = () => {
     }
   };
 
-  const handleDelete = async (key: string) => {
+  const handleDelete = async () => {
+    if (!currentItem) return;
     try {
       await Promise.all([
-        remove(ref(database, `/LANDING/en/AboutApp/${key}`)),
-        remove(ref(database, `/LANDING/am/AboutApp/${key}`)),
-        remove(ref(database, `/LANDING/ru/AboutApp/${key}`)),
+        remove(ref(database, `/LANDING/en/AboutApp/${currentItem.key}`)),
+        remove(ref(database, `/LANDING/am/AboutApp/${currentItem.key}`)),
+        remove(ref(database, `/LANDING/ru/AboutApp/${currentItem.key}`)),
       ]);
-      const updatedData = data.filter(item => item.key !== key);
+      const updatedData = data.filter(item => item.key !== currentItem.key);
       setData(updatedData);
       await updateOrder(updatedData);
+      setDeleteModalVisible(false);
+      setCurrentItem(null);
     } catch (error) {
       console.error('Error deleting item:', error);
+    }
+  };
+
+  const handleEdit = (item: DataType) => {
+    setCurrentItem(item);
+    form.setFieldsValue({
+      ...item,
+      descriptionEN: item.descriptionEN || '',
+      descriptionRU: item.descriptionRU || '',
+      descriptionAM: item.descriptionAM || '',
+    }); 
+    setEditModalVisible(true);
+  };
+
+  const handleSave = async (values: DataType) => {
+    try {
+      await set(ref(database, `/LANDING/en/AboutApp/${values.key}`), {
+        description: values.descriptionEN,
+        order: values.order,
+      });
+      await set(ref(database, `/LANDING/am/AboutApp/${values.key}`), {
+        description: values.descriptionAM,
+        order: values.order,
+      });
+      await set(ref(database, `/LANDING/ru/AboutApp/${values.key}`), {
+        description: values.descriptionRU,
+        order: values.order,
+      });
+      
+      const updatedDataList = data.map(item =>
+        item.key === values.key ? values : item
+      );
+      setData(updatedDataList);
+      setEditModalVisible(false);
+    } catch (error) {
+      console.error('Error updating item:', error);
     }
   };
 
@@ -181,19 +220,18 @@ const AboutApp: React.FC = () => {
       const oldIndex = data.findIndex(item => item.key === active.id);
       const newIndex = data.findIndex(item => item.key === over?.id);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const updatedData = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
-          ...item,
-          order: index + 1,
-        }));
+      const updatedData = arrayMove(data, oldIndex, newIndex).map((item, index) => ({
+        ...item,
+        order: index + 1,
+      }));
 
-        setData(updatedData);
-        await updateOrder(updatedData);
-      }
+      setData(updatedData);
+      await updateOrder(updatedData);
     }
   };
+
   const columns: TableColumnsType<DataType> = [
-    { key: 'sort', align: 'center', width: 80, fixed:'left' , render: () => <DragHandle /> },
+    { key: 'sort', align: 'center', width: 80, fixed: 'left', render: () => <DragHandle /> },
     { title: 'Order', dataIndex: 'order', key: 'order', width: 100 },
     { title: 'Description EN', dataIndex: 'descriptionEN', key: 'descriptionEN', width: 400 },
     { title: 'Description RU', dataIndex: 'descriptionRU', key: 'descriptionRU', width: 400 },
@@ -201,38 +239,106 @@ const AboutApp: React.FC = () => {
     {
       key: 'action',
       title: 'Action',
+      align: 'center',
       fixed: 'right',
-      width: '80px',
+      width: '100px',
       render: (_, record) => (
-        <Popconfirm
-          title="Are you sure you want to delete this item?"
-          onConfirm={() => handleDelete(record.key)}
-          okText="Yes"
-          cancelText="No"
-        >
-          <Button type="text" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              setCurrentItem(record);
+              setDeleteModalVisible(true);
+            }}
+          />
+        </>
       ),
     },
   ];
-  
+
   return (
-    <div className='aboutApp'>
-      <AboutAppTools />
-      <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
-        <SortableContext items={data.map(item => item.key)} strategy={verticalListSortingStrategy}>
+    <>
+      <AboutAppTools/>
+      <DndContext
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={data.map(item => item.key)}
+          strategy={verticalListSortingStrategy}
+        >
           <Table
-            className='aboutAppTable'
+            rowKey="key"
             columns={columns}
             dataSource={data}
-            rowKey="key"
-            components={{ body: { row: Row } }}
             pagination={false}
-            scroll={{ y: 'calc(100vh - 240px)' }}
+            components={{ body: { row: Row } }}
           />
         </SortableContext>
       </DndContext>
-    </div>
+
+      <Modal
+        visible={editModalVisible}
+        title="Edit Item"
+        onCancel={() => setEditModalVisible(false)}
+        cancelButtonProps={{type:'primary' , danger: true}}
+        onOk={() => form.submit()}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSave}
+        >
+          <Form.Item
+            hidden
+            label="Order"
+            name="order"
+            rules={[{ required: true, message: 'Please enter the order!' }]}
+          >
+            <Input type="number" />
+          </Form.Item>
+          <Form.Item
+            label="Description EN"
+            name="descriptionEN"
+            rules={[{ required: true, message: 'Please enter the description in English!' }]}
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item
+            label="Description RU"
+            name="descriptionRU"
+            rules={[{ required: true, message: 'Please enter the description in Russian!' }]}
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item
+            label="Description AM"
+            name="descriptionAM"
+            rules={[{ required: true, message: 'Please enter the description in Armenian!' }]}
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        visible={deleteModalVisible}
+        title="Confirm Deletion"
+        onOk={handleDelete}
+        onCancel={() => setDeleteModalVisible(false)}
+        cancelButtonProps={{type:'primary'}}
+        okButtonProps={{ type: 'primary' , danger: true }}
+      >
+        <p>Are you sure you want to delete this item?</p>
+      </Modal>
+    </>
   );
 };
 
