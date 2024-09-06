@@ -12,22 +12,22 @@ import {
   GlobalOutlined,
   ContainerOutlined,
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme, Modal } from 'antd'; // Import Modal here
+import { Button, Layout, Menu, theme, Modal } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { getAuth, User } from 'firebase/auth'; // Import User type
+import { getAuth, User } from 'firebase/auth'; 
 import ContentC from '../../components/Content/Content';
 
 const { Header, Sider, Content } = Layout;
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null); // Define the type for user state
+  const [user, setUser] = useState<User | null>(null); 
   const [collapsed, setCollapsed] = useState(false);
-  const [logoutModalVisible, setLogoutModalVisible] = useState(false); // State for modal visibility
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
   const navigate = useNavigate();
-  const auth = getAuth(); // Initialize auth here
+  const auth = getAuth(); 
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -189,7 +189,7 @@ const App: React.FC = () => {
         onCancel={() => setLogoutModalVisible(false)}
         cancelButtonProps={{type: 'primary' }}
         okText="Logout"
-        okButtonProps={{ type: 'primary', danger: true }} // Primary button style
+        okButtonProps={{ type: 'primary', danger: true }}
       >
         <p>Are you sure you want to logout?</p>
       </Modal>
