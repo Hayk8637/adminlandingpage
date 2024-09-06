@@ -5,9 +5,12 @@ import {
   UserOutlined,
   LogoutOutlined,
   QuestionCircleOutlined,
-  UnorderedListOutlined,
-  ApartmentOutlined,
-  PicRightOutlined,
+  UsergroupAddOutlined,
+  ProfileOutlined,
+  SolutionOutlined,
+  ReadOutlined,
+  GlobalOutlined,
+  ContainerOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Modal } from 'antd'; // Import Modal here
 import { useNavigate } from 'react-router-dom';
@@ -91,31 +94,31 @@ const App: React.FC = () => {
             {
               key: '1',
               icon: <UserOutlined />,
-              label: user?.email || 'Guest' // Use optional chaining and fallback
+              label: user?.email || 'Guest' 
             },
             {
               key: 'sub1',
-              icon: <PicRightOutlined />,
+              icon: <ContainerOutlined />,
               label: 'Landing Page',
               children: [
                 {
                   key: '7',
-                  icon: <UnorderedListOutlined />,
+                  icon: <GlobalOutlined />,
                   label: 'Languages',
                 },
                 {
                   key: '4',
-                  icon: <UnorderedListOutlined />,
+                  icon: <ReadOutlined />,
                   label: 'About App',
                 },
                 {
                   key: '5',
-                  icon: <ApartmentOutlined />,
+                  icon: <SolutionOutlined />,
                   label: 'Partner List',
                 },
                 {
                   key: '3',
-                  icon: <UnorderedListOutlined />,
+                  icon: <ProfileOutlined />,
                   label: 'Service Include',
                 },
                 {
@@ -125,7 +128,7 @@ const App: React.FC = () => {
                 },
                 {
                   key: '6',
-                  icon: <QuestionCircleOutlined />,
+                  icon: <UsergroupAddOutlined />,
                   label: 'Social pages',
                 },
               ],
